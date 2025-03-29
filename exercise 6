@@ -1,0 +1,79 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import quad
+import sympy as sp
+import math
+
+def y(x):
+    return np.exp(-x)/(x*(1+np.log(x)**2))
+
+c = 0.1
+d = math.pi
+e1 = 10**(-3)
+e2 = 10**(-6)
+
+x_values = np.linspace(c, d, 100)
+
+plt.plot(x_values, y(x_values), color='red')
+plt.xlabel("x")
+plt.ylabel("y(x)")
+plt.grid()
+plt.xlim(c, d)
+plt.show()
+
+J, error = quad(y, c, d)
+print(f"J = {J:.10f}")
+
+x = sp.Symbol('x')
+y_sym = -sp.exp(x)/(x*(1+sp.log(x)**2))
+
+integral = sp.integrate(y_sym, x)
+print(f"Неопределённый интеграл y(x) = {integral} + C")
+
+fourth_derivative = sp.diff(y_sym, x, 4)
+fourth_derivative_func = sp.lambdify(x, fourth_derivative, 'numpy')
+
+x_test = np.linspace(c, d, 100)
+y_test = fourth_derivative_func(x_test)
+M4 = np.max(np.abs(y_test))
+print(f"Максимальное значение четвертой производной (M4): {M4:.10f}")
+
+# Построение графика четвёртой производной
+plt.plot(x_test, y_test, color='green')
+plt.title("Четвертая производная функции y(x)")
+plt.xlabel("x")
+plt.ylabel("y''''(x)")
+plt.grid()
+plt.xlim(c, d)
+plt.show()
+
+def simpson(f, a, b, n):
+    if n % 2 == 1:
+        n += 1  # Симпсон требует четного n
+    h = (b - a) / n
+    x_odd = np.array([a + (2 * i + 1) * h for i in range(n // 2)])
+    x_even = np.array([a + (2 * j) * h for j in range(1, n // 2)])
+
+    sum_odd = np.sum(y(x_odd))
+    sum_even = np.sum(y(x_even))
+
+    return (h / 3) * (y(a) + 4 * sum_odd + 2 * sum_even + y(b))
+
+n1 = math.ceil(((M4 * (d - c) ** 5) / (180 * e1)) ** (1 / 4))
+I1 = simpson(y, c, d, n1)
+print(f"Значение интеграла I1: {I1:.10f}")
+
+
+n2 = math.ceil(((M4 * (d - c) ** 5) / (180 * e2)) ** (1 / 4))
+I2 = simpson(y, c, d, n2)
+print(f"Приближенное значение интеграла I2: {I2:.10f}")
+
+del_E1 = abs(J - I1)
+new_del_E1 = del_E1 / abs(J) * 100
+print(f"Абсолютная погрешность Δ1: {del_E1:.10f}")
+print(f"Относительная погрешность Δ1: {new_del_E1:.10f}%")
+
+del_E2 = abs(J - I2)
+new_del_E2 = del_E2 / abs(J) * 100
+print(f"Абсолютная погрешность Δ2: {del_E2:.10f}")
+print(f"Относительная погрешность Δ2: {new_del_E2:.10f}%")
